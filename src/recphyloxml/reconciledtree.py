@@ -2,25 +2,25 @@
 # -*- coding: utf-8 -*-
 
 #########################################
-##  Author:         Wandrille Duchemin  
-##  Created:        13-Jan-2017         
-##  Last modified:  10-Apr-2018        
-## 
+##  Author:         Wandrille Duchemin
+##  Created:        13-Jan-2017
+##  Last modified:  10-Apr-2018
+##
 ##  Decribes 3 classes : RecEvent, ReconciledTree and ReconciledTreeList
-##  the ReconciledTree class represent a reconciled gene tree and 
+##  the ReconciledTree class represent a reconciled gene tree and
 ##  offers input and output functions for the recPhyloXML format.
-##  The ReconciledTreeList class is a container for several instances of ReconciledTree 
-##  and a facultative species tree
+##  The ReconciledTreeList class is a container for several instances of ReconciledTree
+##  and a facultative species tree
 ##
 ##  requires : ete3 ( http://etetoolkit.org/ )
 ##             xml ( in standard library )
-## 
-##  developped for python2.7
+##
+##  developped for python3.6
 ##
 #########################################
 
 
-import ete3 
+import ete3
 import xml.etree.ElementTree as ET
 
 
@@ -79,20 +79,18 @@ EVENTTAGCORRESPONDANCE = {    "D" : "duplication",
                         "L":"loss",
 
                         "Bo": "bifurcationOut",
-                        #"So": "branchingOut",
                         "bro": "branchingOut",
                         "Tb": "transferBack",
 
                         "SL": "speciationLoss",
-                        #"SoL": "branchingOutLoss",
-                        "broL": "branchingOutLoss",
+                        "broL": "branchingOutLoss"
                         }
 
 class RecEvent:
-    def __init__(self, eventCode , species , ts = None , additionnalInfo = {}):
+    def __init__(self, eventCode , species , ts = None , additionalInfo = None):
         """
         Takes:
-            - eventCode (str) : a code indicating the recEvent event 
+            - eventCode (str) : a code indicating the recEvent event
             - species (~) : a identifier for the specie the event takes place in
             - ts (int or None) [default= None] : the time slice the events happens at, if applicable
             - additionnalInfo (dict) [default= {}] : keys are expected to be some property tag and values the associated information
@@ -100,17 +98,18 @@ class RecEvent:
         self.eventCode = eventCode
         self.species = species
         self.timeSlice = ts
-        self.additionnalInfo = additionnalInfo.copy()
+        self.additionalInfo = {} if additionalInfo is None else additionalInfo.copy()
 
     def __str__(self):
         eventName = self.eventCode
-        if EVENTTAGCORRESPONDANCE.has_key(self.eventCode):
+#        if EVENTTAGCORRESPONDANCE.has_key(self.eventCode):
+        if self.eventCode in EVENTTAGCORRESPONDANCE:
             eventName = EVENTTAGCORRESPONDANCE[self.eventCode]
 
         L = [ str(self.eventCode), "spe=" + str(self.species) ]
         if not self.timeSlice is None:
             L.append("ts=" + str(self.timeSlice))
-        for k,v in self.additionnalInfo.items():
+        for k,v in self.additionalInfo.items():
             L.append(str(k) + "=" + str(v) )
         return " ".join(L)
 
@@ -118,7 +117,7 @@ class RecEvent:
         """ tmp simplistic version """
         s = str(self.species)
         s += "."
-        
+
         s += str(self.eventCode)
         return s
 
@@ -129,7 +128,8 @@ class RecEvent:
             return ""
 
         eventName = self.eventCode
-        if EVENTTAGCORRESPONDANCE.has_key(self.eventCode):
+#        if EVENTTAGCORRESPONDANCE.has_key(self.eventCode):
+        if self.eventCode in EVENTTAGCORRESPONDANCE:
             eventName = EVENTTAGCORRESPONDANCE[self.eventCode]
 
         spe = str(self.species)
@@ -143,32 +143,34 @@ class RecEvent:
             if self.eventCode == "Tb":
                 S += "destinationSpecies="
             else:
-                S += "speciesLocation=" 
+                S += "speciesLocation="
             S += '"' + str(spe) + '"'
 
             if not self.timeSlice is None:
                 S += " ts=" + '"' + str(self.timeSlice) + '"'
 
         propertyName = "confidence"
-        if self.additionnalInfo.has_key(propertyName):
+#        if self.additionnalInfo.has_key(propertyName):
+        if propertyName in self.additionnalInfo:
             S += " " + propertyName + "=" + '"' + self.additionnalInfo[propertyName] + '"'
 
         if self.eventCode == "C":
             propertyName = "geneName"
-            if self.additionnalInfo.has_key(propertyName):
+#            if self.additionnalInfo.has_key(propertyName):
+            if propertyName in self.additionnalInfo:
                 S += " " + propertyName + "=" + '"' + self.additionnalInfo[propertyName] + '"'
 
 
         S += ">"
         S += "</" + eventName + ">"
-        
+
         #print self.eventCode , "->", S
         return S
 
 
 class ReconciledTree(ete3.TreeNode):
     def __init__(self):
-        ete3.TreeNode.__init__(self)
+        super().__init__(self)
 
         self.name = ""
         self.eventRecs = []
@@ -187,7 +189,7 @@ class ReconciledTree(ete3.TreeNode):
         return self.eventRecs.pop(i)
 
 
-    def addEvent(self , e,append = True):
+    def addEvent(self, e, append = True):
         """
             Takes:
                 - e (RecEvent) : the reconciliation event to add
@@ -240,20 +242,13 @@ class ReconciledTree(ete3.TreeNode):
     def getTreeNewick(self, sep="|" , topoOnly = False):
         return self.getTreeNewickAux(sep, topoOnly) + ";"
 
-    def getTreeRecPhyloXMLAux(self , speciesNames ={}, topoOnly = False, featuresToPrint = {}):
-        
+    def getTreeRecPhyloXMLAux(self , speciesNames = None, topoOnly = False):
+        if speciesNames is None:
+            speciesNames = {}
+
         L = []
         L.append("<clade>")
         L.append("  <name>" + str(self.name) + "</name>" )
-
-        for k in self.features:
-            if featuresToPrint.has_key(k):
-                L.append("  <"+str(featuresToPrint[k])+">" + str( getattr(self,k) ) + "</"+str(featuresToPrint[k])+">" )
-            elif k == 'dist':
-                L.append("  <branch_length>" + str( getattr(self,k) ) + "</branch_length>" )
-            elif k == 'support':
-                L.append("  <confidence>" + str( getattr(self,k) ) + "</confidence>" )
-
         if not topoOnly:
             L.append("  <eventsRec>")
             for e in self.eventRecs:
@@ -264,20 +259,24 @@ class ReconciledTree(ete3.TreeNode):
             L.append("  </eventsRec>")
         ChL = []
         for c in self.get_children():
-            ChL += ["  " + s for s in c.getTreeRecPhyloXMLAux(speciesNames, topoOnly, featuresToPrint)]
+            ChL += ["  " + s for s in c.getTreeRecPhyloXMLAux(speciesNames, topoOnly)]
         if len(ChL)>0:
             L += ChL
         L.append("</clade>")
         return L
 
-    def getTreeRecPhyloXML(self , speciesNames ={}, topoOnly = False, featuresToPrint = {}):
-        Lines = self.getTreeRecPhyloXMLLines( speciesNames, topoOnly , featuresToPrint )        
+    def getTreeRecPhyloXML(self , speciesNames = None, topoOnly = False):
+        if speciesNames is None:
+            speciesNames = {}
+        Lines = self.getTreeRecPhyloXMLLines( speciesNames, topoOnly)
         return "\n".join(Lines)
 
-    def getTreeRecPhyloXMLLines(self , speciesNames ={}, topoOnly = False,featuresToPrint = {}):
+    def getTreeRecPhyloXMLLines(self , speciesNames = None, topoOnly = False):
+        if speciesNames is None:
+            speciesNames = {}
         Lines = ["<recGeneTree>"]
         Lines.append("  <phylogeny rooted=\"true\">")
-        tmp = self.getTreeRecPhyloXMLAux( speciesNames , topoOnly, featuresToPrint )
+        tmp = self.getTreeRecPhyloXMLAux( speciesNames , topoOnly )
         for l in tmp:
             Lines.append( "    " + l )
         Lines.append("  </phylogeny>")
@@ -293,15 +292,16 @@ class ReconciledTree(ete3.TreeNode):
         devent = {}
         for e in self.eventRecs:
             code  = e.eventCode
-
-            if not devent.has_key(code):
+#            if not devent.has_key(code):
+            if not code in devent:
                 devent[code] = 0
-            devent[code] += 1 
+            devent[code] += 1
 
         for c in self.get_children():
             tmp = c.countEvents()
             for k in tmp.keys():
-                if not devent.has_key(k):
+#                if not devent.has_key(k):
+                if not k in devent:
                     devent[k] = 0
                 devent[k] += tmp[k]
 
@@ -314,7 +314,7 @@ class ReconciledTree(ete3.TreeNode):
         Takes:
              - speciesTree (ete3.Tree) : the species tree used for the reconciliation, necessary to assign a species to loss events.
              - includeTransferReception [default = True]  : Whether or not to includes events of  TransferReception (transferBack tag) in the counts.
-             - includeTransferDeparture [default = False] : Whether or not to includes events of  TransferDeparture (speciationOut tag) in the counts.
+             - includeTransferDeparture [default = False] : Whether or not to includes events of  TransferDeparture (branchingOut tag) in the counts.
              - speciesIdFeature (str) [default = "name"] : the feature to use as Id in the species tree (by default the name is used)
 
         Returns:
@@ -324,7 +324,7 @@ class ReconciledTree(ete3.TreeNode):
 
         """
 
-        EventsSummary = { "duplication" : [], 
+        EventsSummary = { "duplication" : [],
                           "loss" : [] }
 
         if includeTransferReception:
@@ -404,7 +404,7 @@ class ReconciledTree(ete3.TreeNode):
     def getLostSpecies( self, evtIndex , speciesTree, speciesIdFeature = "name"):
         """
         given the index of an event of *Loss (speciationLoss for instance) in this nodes,
-        this function returns the id of the species where the loss occured 
+        this function returns the id of the species where the loss occured
         (this function is useful because speciationLoss event references the species of the speciation rather than the species of the loss)
 
         Takes:
@@ -425,7 +425,7 @@ class ReconciledTree(ete3.TreeNode):
             return None
 
         if evtCode in ('broL', EVENTTAGCORRESPONDANCE["broL"]):
-            return self.getEvent(evtIndex).species ## in speciationouLoss, the species of the lost lineage is the same as the one of the speciationOut
+            return self.getEvent(evtIndex).species ## in branchingOutLoss, the species of the lost lineage is the same as the one of the branchingOut
 
         ## We know this is a speciationLoss event.
         ## Note that speciationLoss events are NEVER the last event in eventsRec (as they are neither a bifurcation nor a leaf event).
@@ -436,7 +436,7 @@ class ReconciledTree(ete3.TreeNode):
         Speciesnode = speciesTree.search_nodes(**{speciesIdFeature: lostSpeciesSister })
 
         if len(Speciesnode) != 1:
-            raise Error("error:",len(Speciesnode),"with Id",lostSpeciesSister ,"(1 expected).")
+            raise ValueError("error:",len(Speciesnode),"with Id",lostSpeciesSister ,"(1 expected).")
 
         lostSpeciesNode = Speciesnode[0].get_sisters()[0]
 
@@ -449,7 +449,7 @@ class ReconciledTree(ete3.TreeNode):
 
 class ReconciledTreeList:
     """
-    This object represents a group of reconciled tree. 
+    This object represents a group of reconciled tree.
     Usually they would be reconciled with the same species tree, which can also be added to this object.
 
     Atributes:
@@ -457,7 +457,7 @@ class ReconciledTreeList:
         - self.recTrees : the reconciled trees
 
     """
-    def __init__(self, spTree = None , recTrees = []):
+    def __init__(self, spTree = None , recTrees = None):
         """
         Takes:
             spTree (ete3.Tree) [ default = None ] : facultative species tree
@@ -465,7 +465,7 @@ class ReconciledTreeList:
         """
 
         self.spTree = spTree
-        self.recTrees = recTrees[:]
+        self.recTrees = [] if recTrees is None else recTrees[:]
 
 
     def setSpTree(self, ST):
@@ -497,7 +497,7 @@ class ReconciledTreeList:
 
         Returns:
             (ReconciledTree) : the reconciled tree at the desired index
-            OR IndexError if the index is invalid (ie. too high) 
+            OR IndexError if the index is invalid (ie. too high)
         """
 
         if i >= len(self.recTrees):
@@ -521,7 +521,7 @@ class ReconciledTreeList:
         """
         return not self.spTree is None
 
-    def getRecPhyloXMLLines(self ,featuresToPrint={} ):
+    def getRecPhyloXMLLines(self):
         """
         Returns:
             (list) : list of lines of the recPhyloXML representation of this object
@@ -544,7 +544,7 @@ class ReconciledTreeList:
 
 
         for RT in self.recTrees:
-            recLines = RT.getTreeRecPhyloXMLLines(featuresToPrint=featuresToPrint)
+            recLines = RT.getTreeRecPhyloXMLLines()
             for l in recLines:
                 lines.append( offsetChar*offset + l )
 
@@ -561,7 +561,7 @@ class ReconciledTreeList:
 
         Takes:
              - includeTransferReception [default = True]  : whether or not to includes events of  TransferReception (transferBack tag) in the counts.
-             - includeTransferDeparture [default = False] : whether or not to includes events of  TransferDeparture (speciationOut tag) in the counts.
+             - includeTransferDeparture [default = False] : whether or not to includes events of  TransferDeparture (branchingOut tag) in the counts.
              - speciesIdFeature (str) [default = "name"] : the feature to use as Id in the species tree (by default the name is used)
              - indexBySpecies (str) [default = False] : if True, the returned dictionnary will have species as keys and event counts as values.
 
@@ -578,9 +578,9 @@ class ReconciledTreeList:
         """
 
         if not self.hasSpTree():
-            raise Error("error : can't get an events summary when no species tree has been assigned.")
+            raise ValueError("error : can't get an events summary when no species tree has been assigned.")
 
-        EventsSummary = { "duplication" : [], 
+        EventsSummary = { "duplication" : [],
                           "loss" : [] }
 
         if includeTransferReception:
@@ -592,12 +592,12 @@ class ReconciledTreeList:
         for RT in self.recTrees:
             tmp = RT.getEventsSummary(self.spTree , includeTransferReception , includeTransferDeparture , speciesIdFeature)
 
-            
+
 
             for k,v in tmp.items():
                 EventsSummary[k] += v
 
-        
+
 
 
         if indexBySpecies:
@@ -608,7 +608,7 @@ class ReconciledTreeList:
 
                 tmp[ getattr(n,speciesIdFeature) ] = {}
 
-            
+
 
             for e in EventsSummary.keys():
 
