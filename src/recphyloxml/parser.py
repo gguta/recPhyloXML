@@ -21,7 +21,7 @@
 import ete3
 import xml.etree.ElementTree as ET
 
-from .reconciledtree import ReconciledTree, RecEvent, ReconciledTreeList , EVENTTAGCORRESPONDANCE
+from .reconciledtree import ReconciledTree, RecEvent, ReconciledTreeList, EVENTTAGCORRESPONDANCE
 
 REVERSE_EVENTTAGCORRESPONDANCE = {v:k for k,v in EVENTTAGCORRESPONDANCE.items()}
 

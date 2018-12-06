@@ -151,14 +151,14 @@ class RecEvent:
 
         propertyName = "confidence"
 #        if self.additionnalInfo.has_key(propertyName):
-        if propertyName in self.additionnalInfo:
-            S += " " + propertyName + "=" + '"' + self.additionnalInfo[propertyName] + '"'
+        if propertyName in self.additionalInfo:
+            S += " " + propertyName + "=" + '"' + self.additionalInfo[propertyName] + '"'
 
         if self.eventCode == "C":
             propertyName = "geneName"
 #            if self.additionnalInfo.has_key(propertyName):
-            if propertyName in self.additionnalInfo:
-                S += " " + propertyName + "=" + '"' + self.additionnalInfo[propertyName] + '"'
+            if propertyName in self.additionalInfo:
+                S += " " + propertyName + "=" + '"' + self.additionalInfo[propertyName] + '"'
 
 
         S += ">"
@@ -170,7 +170,7 @@ class RecEvent:
 
 class ReconciledTree(ete3.TreeNode):
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
 
         self.name = ""
         self.eventRecs = []

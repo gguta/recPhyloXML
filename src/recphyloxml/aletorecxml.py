@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
 #########################################
-##  Author:         Wandrille Duchemin
+##  Author:         Wandrille Duchemin, Gabor Guta
 ##  Created:        20-June-2016
-##  Last modified:  10-Apr-2018
+##  Last modified:  06-Dec-2018
 ##
 ##  Decribes functions to transform a reconciled tree in
 ##  NHX format into a tree in the recPhyloXML format
@@ -415,7 +415,7 @@ def makeLossIndependentNode( node , LossIndex , lostSpecies = "", lostTS = None,
     # 1. create the loss child
 
     lossNode = ReconciledTree()
-    lossNode.addEvent( RecEvent("loss" , lostSpecies, ts= lostTS , additionnalInfo = lostAdditional) )
+    lossNode.addEvent( RecEvent("loss" , lostSpecies, ts= lostTS , additionalInfo = lostAdditional) )
     lossNode.name="LOSS"
 
     # 2. create the kept child
@@ -577,7 +577,8 @@ if __name__ == "__main__":
 
 
                 RT = ALEtreeToReconciledTree(ALEtree, isUndated = isUndated)
-
+                RT.show()
+                ALEtree.show()
                 if isUndated:
                     refineReconciledTreeWithTransferBack(RT)
 
