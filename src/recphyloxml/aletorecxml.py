@@ -483,6 +483,7 @@ if __name__ == "__main__":
     params = {
                             "-g"    : None ,#name of the file containing NHX reconciliations
                             "-o"    : None #(optional) name of the output file (default is geneFileIn + ".xml" )
+
 #                            "-s"    : None ,#name of the species tree file
 #                            "--include.species"   : False #(optional) whether the species tree should be included in the XML file (using the <spTree> tag)
             }
